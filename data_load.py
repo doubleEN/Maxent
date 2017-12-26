@@ -21,7 +21,7 @@ def get_data(data_dir, format_str):
     :param format_str:每行文本处理的方式
     :return:返回加载完的数据集列表
     """
-    return [format_str(line) for line in open(data_dir)]
+    return [format_str(line) for line in open(data_dir) if line.strip() !=""]
 
 if __name__ == "__main__":
     data = get_data("data/zoo.train",format_sample)
