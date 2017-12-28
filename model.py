@@ -29,7 +29,7 @@ class MaxEnt(object):
                 feat_fun_count[(feature, sample[0][feature], sample[1])] += 1
         self.labels = list(label_set)
         self.feature_functions_num = len(feat_fun_count)
-        self.feat_fun_id = collections.defaultdict(int)
+        self.feat_fun_id = {}
         self.ep_ = []
         id = 0
         for feat_fun, count in feat_fun_count.items():
@@ -42,11 +42,11 @@ class MaxEnt(object):
         """
         开始建模
         """
+        feature_funs = self.feat_fun_id.items()
         for iter in range(self.iters_weight):
-            for feat_fun_key, id in self.feat_fun_id.items():
+            for feat_fun_key, id in feature_funs:
                 self.W[id] = self.W[id] + self.__iter_delta(feat_fun_key)
-            print("ITERATIONS_" + str(iter), self.W)
-        print("feature_fun_num", self.feature_functions_num)
+            print("iter_" + str(iter), self.W)
 
     def __iter_delta(self, feature_fun_key):
         """
@@ -56,6 +56,7 @@ class MaxEnt(object):
         """
         id = self.feat_fun_id[feature_fun_key]
         delta = 0.0
+
         for iter in range(self.iters_delta):
             newton_g = 0.0
             newton_g_derivative = 0.0
@@ -67,12 +68,12 @@ class MaxEnt(object):
                     newton_g += val
                     newton_g_derivative += val * pound_sign_count
             newton_g = self.ep_[id] - newton_g / self.sample_sum
-            if np.abs(newton_g) < 1e-7:
+            if np.abs(newton_g) < 1e-07:
                 return delta
             newton_g_derivative = -newton_g_derivative / self.sample_sum
             ratio = newton_g / newton_g_derivative
             delta -= ratio
-            if ratio < self.convergence_condition:
+            if np.abs(ratio) < self.convergence_condition:
                 return delta
 
         raise Exception("未在迭代周期内收敛")
@@ -84,8 +85,8 @@ class MaxEnt(object):
         :return:f#值
         """
         return np.sum(
-            1 for feature in sample[0].keys() if
-            self.feat_fun_id[(feature, sample[0][feature], sample[1])] >= 0)
+            1 for feature in sample[0].keys() if (feature, sample[0][feature], sample[1]) in
+            self.feat_fun_id)
 
     def __calc_prob_lable_given_sample(self, unk_sample, label):
         """
@@ -110,7 +111,7 @@ class MaxEnt(object):
                    (feature, unk_sample[feature], label) in self.feat_fun_id.keys()))
                       for label in self.labels)
 
-    def __calc_probs_lables_given_sample(self, unk_sample):
+    def calc_probs_lables_given_sample(self, unk_sample):
         """
         计算未标注样本的条件概率
         :param unk_sample:未标注的样本
@@ -124,7 +125,8 @@ class MaxEnt(object):
         :param unk_sample:未标注样本
         :return:label值
         """
-        return self.labels[np.argmax(self.__calc_probs_lables_given_sample(unk_sample))]
+        return self.labels[np.argmax(self.calc_probs_lables_given_sample(unk_sample))]
+
 
 if __name__ == "__main__":
     import data_load
@@ -132,10 +134,11 @@ if __name__ == "__main__":
     data = data_load.get_data("data/zoo2.train", data_load.format_sample)
     model = MaxEnt(data)
     model.build_model()
+    # print(model.calc_probs_lables_given_sample({"f_1": "sunny", "f_2": "hot", "f_3": "high", "f_4": "FALSE"}))
 
     test_data = data_load.get_data("data/zoo.test", data_load.format_sample)
 
-    precies=[]
-    for unk_sample,label in test_data:
-        precies.append(model.predict(unk_sample)==label)
-    print(np.sum(precies)/len(precies))
+    precies = []
+    for unk_sample, label in test_data:
+        precies.append(model.predict(unk_sample) == label)
+    print(np.sum(precies) / len(precies))
