@@ -10,7 +10,7 @@ def format_sample(sample_str):
     :return:({"feature_1":val1,"feature_2":val...},label)数据结构的样本
     """
     sample = sample_str.strip().split()
-    feature_dict = {"feature_" + str(i): sample[i] for i in range(1, len(sample))}
+    feature_dict = {"f_" + str(i): sample[i] for i in range(1, len(sample))}
     return (feature_dict, sample[0])
 
 
